@@ -1,0 +1,8 @@
+{
+    "public_key": "public.pem",
+    "private_key": "private.pem",
+    "encrypted_sym_key": "sym_key.enc",
+    "input_file": "input.txt",
+    "encrypted_file": "encrypted.bin",
+    "decrypted_file": "decrypted.txt"
+}
