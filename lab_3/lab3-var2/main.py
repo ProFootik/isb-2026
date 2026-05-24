@@ -15,7 +15,16 @@ class HybridCryptoSystem:
     
     @staticmethod
     def generate_keys(public_key_path, private_key_path, encrypted_sym_key_path, sym_key_size=256):
-        """Режим 1: Генерация ключей гибридной системы"""
+        """Генерация ключей гибридной системы.
+        
+        Принимает:
+            public_key_path: путь для сохранения открытого ключа RSA
+            private_key_path: путь для сохранения закрытого ключа RSA
+            encrypted_sym_key_path: путь для сохранения зашифрованного ключа Camellia
+            sym_key_size: длина ключа Camellia (128/192/256)
+        
+        Возвращает: True при успехе
+        """
         print("\n=== РЕЖИМ ГЕНЕРАЦИИ КЛЮЧЕЙ ===")
         
         print("1.1. Генерация ключа Camellia (длина {} бит)...".format(sym_key_size))
@@ -71,7 +80,14 @@ class HybridCryptoSystem:
     
     @staticmethod
     def load_symmetric_key(encrypted_sym_key_path, private_key_path):
-        """Загрузить и расшифровать симметричный ключ"""
+        """Загрузка и расшифровка симметричного ключа.
+        
+        Принимает:
+            encrypted_sym_key_path: путь к зашифрованному ключу
+            private_key_path: путь к закрытому ключу RSA
+        
+        Возвращает: (symmetric_key_bytes, key_size_in_bits)
+        """
         with open(encrypted_sym_key_path, 'r') as f:
             key_data = json.load(f)
         
@@ -97,7 +113,16 @@ class HybridCryptoSystem:
     
     @staticmethod
     def encrypt_file(input_file_path, output_file_path, encrypted_sym_key_path, private_key_path):
-        """Режим 2: Шифрование данных гибридной системой"""
+        """Шифрование файла.
+        
+        Принимает:
+            input_file_path: путь к исходному файлу
+            output_file_path: путь для сохранения зашифрованного файла
+            encrypted_sym_key_path: путь к зашифрованному ключу
+            private_key_path: путь к закрытому ключу RSA
+        
+        Возвращает: True при успехе
+        """
         print("\n=== РЕЖИМ ШИФРОВАНИЯ ===")
         
         print("2.1. Расшифровка симметричного ключа...")
@@ -134,7 +159,16 @@ class HybridCryptoSystem:
     
     @staticmethod
     def decrypt_file(encrypted_file_path, output_file_path, encrypted_sym_key_path, private_key_path):
-        """Режим 3: Дешифрование данных гибридной системой"""
+        """Дешифрование файла.
+        
+        Принимает:
+            encrypted_file_path: путь к зашифрованному файлу
+            output_file_path: путь для сохранения расшифрованного файла
+            encrypted_sym_key_path: путь к зашифрованному ключу
+            private_key_path: путь к закрытому ключу RSA
+        
+        Возвращает: True при успехе
+        """
         print("\n=== РЕЖИМ ДЕШИФРОВАНИЯ ===")
         
         print("3.1. Расшифровка симметричного ключа...")
@@ -172,7 +206,11 @@ class HybridCryptoSystem:
 
 
 def load_settings(settings_path):
-    """Загрузка настроек из JSON файла"""
+    """Загрузка настроек из JSON файла.
+    
+    Принимает: путь к файлу настроек
+    Возвращает: словарь с настройками или None
+    """
     if os.path.exists(settings_path):
         with open(settings_path, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -180,13 +218,21 @@ def load_settings(settings_path):
 
 
 def save_settings(settings_path, settings):
-    """Сохранение настроек в JSON файл"""
+    """Сохранение настроек в JSON файл.
+    
+    Принимает: путь к файлу и словарь с настройками
+    Возвращает: None
+    """
     with open(settings_path, 'w', encoding='utf-8') as f:
         json.dump(settings, f, indent=4, ensure_ascii=False)
 
 
 def interactive_mode():
-    """Интерактивный режим работы с пользователем"""
+    """Интерактивный режим с меню.
+    
+    Принимает: None
+    Возвращает: None
+    """
     print("\n" + "="*60)
     print("ГИБРИДНАЯ КРИПТОСИСТЕМА (Camellia + RSA)")
     print("="*60)
@@ -306,7 +352,11 @@ def interactive_mode():
 
 
 def main():
-    """Главная функция с поддержкой аргументов командной строки"""
+    """Главная функция с аргументами командной строки.
+    
+    Принимает: аргументы из командной строки
+    Возвращает: None
+    """
     parser = argparse.ArgumentParser(description="Гибридная криптосистема (Camellia + RSA)")
     
     group = parser.add_mutually_exclusive_group(required=False)

@@ -15,6 +15,12 @@ class CamelliaCipher:
     }
     
     def __init__(self, key):
+        """Инициализация шифра Camellia.
+        
+        Принимает: key - ключ шифрования (16/24/32 байта)
+        Возвращает: None
+        """
+
         key_len = len(key)
         if key_len not in [16, 24, 32]:
             raise ValueError("Длина ключа должна быть 16, 24 или 32 байта, получено {}".format(key_len))
@@ -23,6 +29,11 @@ class CamelliaCipher:
         self.key_size_bits = {16: 128, 24: 192, 32: 256}[key_len]
     
     def encrypt(self, plaintext, iv=None):
+        """Шифрование данных.
+        
+        Принимает: plaintext - данные, iv - вектор инициализации (опционально)
+        Возвращает: (iv, ciphertext)
+        """
         if iv is None:
             iv = os.urandom(self.BLOCK_SIZE)
         
@@ -37,6 +48,11 @@ class CamelliaCipher:
         return iv, ciphertext
     
     def decrypt(self, ciphertext, iv):
+        """Дешифрование данных.
+        
+        Принимает: ciphertext - зашифрованные данные, iv - вектор инициализации
+        Возвращает: plaintext
+        """
         cipher = Cipher(algorithms.Camellia(self.key), modes.CBC(iv))
         decryptor = cipher.decryptor()
         
@@ -49,6 +65,11 @@ class CamelliaCipher:
     
     @staticmethod
     def generate_key(key_size_bits=256):
+        """Генерация случайного ключа.
+        
+        Принимает: key_size_bits - длина ключа (128/192/256)
+        Возвращает: bytes - сгенерированный ключ
+        """
         if key_size_bits not in CamelliaCipher.KEY_SIZES:
             raise ValueError("Длина ключа должна быть 128, 192 или 256 бит, получено {}".format(key_size_bits))
         
