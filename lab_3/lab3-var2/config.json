@@ -1,0 +1,16 @@
+{
+    "camellia_block_size": 16,
+    "camellia_block_size_bits": 128,
+    "camellia_key_sizes": {
+        "128": 16,
+        "192": 24,
+        "256": 32
+    },
+    "rsa_public_exponent": 65537,
+    "rsa_key_size": 2048,
+    "encoding": {
+        "json_indent": 4,
+        "pem_encoding": "PEM",
+        "private_format": "TraditionalOpenSSL"
+    }
+}
