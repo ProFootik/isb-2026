@@ -9,6 +9,7 @@ class HybridCrypto:
     """Гибридная криптосистема Camellia + RSA.
     
     Объединяет скорость симметричного шифрования и безопасную передачу ключа.
+    Данные шифруются Camellia, ключ Camellia шифруется RSA.
     """
     
     def __init__(self, config_path='config.json'):
@@ -23,14 +24,14 @@ class HybridCrypto:
         self.block_size = self.config['camellia_block_size']
     
     def generate_keys(self, public_key_path, private_key_path, encrypted_sym_key_path, sym_key_size=256):
-        """Генерация ключей гибридной системы.
+        """Генерация ключей гибридной системы (режим 1).
         
         Принимает:
             public_key_path: путь для сохранения открытого ключа RSA
             private_key_path: путь для сохранения закрытого ключа RSA
             encrypted_sym_key_path: путь для сохранения зашифрованного ключа Camellia
-            sym_key_size: длина ключа Camellia (128/192/256)
-        Возвращает: True при успехе
+            sym_key_size: длина ключа Camellia в битах (128, 192 или 256)
+        Возвращает: True при успехе, False при ошибке
         """
         try:
             print("\n=== РЕЖИМ ГЕНЕРАЦИИ КЛЮЧЕЙ ===")
@@ -66,53 +67,38 @@ class HybridCrypto:
             print("\nГенерация ключей успешно завершена!")
             return True
             
-        except FileNotFoundError as e:
-            print(f"Ошибка: файл не найден - {e}")
-            return False
-        except ValueError as e:
-            print(f"Ошибка: неверное значение - {e}")
-            return False
         except Exception as e:
             print(f"Ошибка при генерации ключей: {e}")
             return False
     
     def _load_symmetric_key(self, encrypted_sym_key_path, private_key_path):
-        """Загрузка и расшифровка симметричного ключа.
-        
-        Принимает: encrypted_sym_key_path - путь к зашифрованному ключу, private_key_path - путь к закрытому ключу RSA
-        Возвращает: (symmetric_key_bytes, key_size_in_bits)
-        """
-        try:
-            with open(encrypted_sym_key_path, 'r') as f:
-                key_data = json.load(f)
-            
-            encrypted_key = bytes.fromhex(key_data['encrypted_key'])
-            key_size = key_data['key_size']
-            
-            private_key = RSACipher.load_private_key(private_key_path)
-            symmetric_key = RSACipher.decrypt(private_key, encrypted_key)
-            
-            return symmetric_key, key_size
-            
-        except FileNotFoundError:
-            print(f"Ошибка: файл не найден - {encrypted_sym_key_path}")
-            raise
-        except json.JSONDecodeError:
-            print(f"Ошибка: неверный формат JSON в файле {encrypted_sym_key_path}")
-            raise
-        except Exception as e:
-            print(f"Ошибка при загрузке симметричного ключа: {e}")
-            raise
-    
-    def encrypt_file(self, input_file_path, output_file_path, encrypted_sym_key_path, private_key_path):
-        """Шифрование файла гибридной системой.
+        """Загрузка и расшифровка симметричного ключа (внутренний метод).
         
         Принимает:
-            input_file_path: путь к исходному файлу
-            output_file_path: путь для сохранения зашифрованного файла
-            encrypted_sym_key_path: путь к зашифрованному ключу
+            encrypted_sym_key_path: путь к зашифрованному ключу Camellia
             private_key_path: путь к закрытому ключу RSA
-        Возвращает: True при успехе
+        Возвращает: (symmetric_key, key_size) - кортеж из ключа и его длины в битах
+        """
+        with open(encrypted_sym_key_path, 'r') as f:
+            key_data = json.load(f)
+        
+        encrypted_key = bytes.fromhex(key_data['encrypted_key'])
+        key_size = key_data['key_size']
+        
+        private_key = RSACipher.load_private_key(private_key_path)
+        symmetric_key = RSACipher.decrypt(private_key, encrypted_key)
+        
+        return symmetric_key, key_size
+    
+    def encrypt_file(self, input_file_path, output_file_path, encrypted_sym_key_path, private_key_path):
+        """Шифрование файла гибридной системой (режим 2).
+        
+        Принимает:
+            input_file_path: путь к исходному текстовому файлу
+            output_file_path: путь для сохранения зашифрованного файла
+            encrypted_sym_key_path: путь к зашифрованному ключу Camellia
+            private_key_path: путь к закрытому ключу RSA
+        Возвращает: True при успехе, False при ошибке
         """
         try:
             print("\n=== РЕЖИМ ШИФРОВАНИЯ ===")
@@ -144,25 +130,19 @@ class HybridCrypto:
             print("\nШифрование успешно завершено!")
             return True
             
-        except FileNotFoundError as e:
-            print(f"Ошибка: файл не найден - {e}")
-            return False
-        except ValueError as e:
-            print(f"Ошибка: неверное значение - {e}")
-            return False
         except Exception as e:
             print(f"Ошибка при шифровании: {e}")
             return False
     
     def decrypt_file(self, encrypted_file_path, output_file_path, encrypted_sym_key_path, private_key_path):
-        """Дешифрование файла гибридной системой.
+        """Дешифрование файла гибридной системой (режим 3).
         
         Принимает:
             encrypted_file_path: путь к зашифрованному файлу
             output_file_path: путь для сохранения расшифрованного файла
-            encrypted_sym_key_path: путь к зашифрованному ключу
+            encrypted_sym_key_path: путь к зашифрованному ключу Camellia
             private_key_path: путь к закрытому ключу RSA
-        Возвращает: True при успехе
+        Возвращает: True при успехе, False при ошибке
         """
         try:
             print("\n=== РЕЖИМ ДЕШИФРОВАНИЯ ===")
@@ -197,12 +177,6 @@ class HybridCrypto:
             print("\nДешифрование успешно завершено!")
             return True
             
-        except FileNotFoundError as e:
-            print(f"Ошибка: файл не найден - {e}")
-            return False
-        except ValueError as e:
-            print(f"Ошибка: неверное значение - {e}")
-            return False
         except Exception as e:
             print(f"Ошибка при дешифровании: {e}")
             return False
