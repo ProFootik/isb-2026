@@ -1,16 +1,12 @@
 import os
-import json
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 
+from load_and_save_data import load_json
+
 
 class CamelliaCipher:
-    """Реализация симметричного шифрования алгоритмом Camellia.
-    
-    Поддерживаемые длины ключа: 128, 192, 256 бит.
-    Режим шифрования: CBC.
-    Паддинг: ANSI X9.23.
-    """
+    """Реализация симметричного шифрования алгоритмом Camellia."""
     
     def __init__(self, key, config_path='config.json'):
         """Инициализация шифра Camellia.
@@ -19,15 +15,7 @@ class CamelliaCipher:
             key: ключ шифрования (16, 24 или 32 байта)
             config_path: путь к файлу конфигурации
         """
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                self.config = json.load(f)
-        except FileNotFoundError:
-            print(f"Ошибка: файл конфигурации {config_path} не найден")
-            raise
-        except json.JSONDecodeError:
-            print(f"Ошибка: файл {config_path} содержит некорректный JSON")
-            raise
+        self.config = load_json(config_path)
         
         self.block_size = self.config['camellia_block_size']
         self.block_size_bits = self.config['camellia_block_size_bits']
@@ -51,24 +39,20 @@ class CamelliaCipher:
             iv: вектор инициализации (16 байт, опционально)
         
         Возвращает:
-            tuple: (iv, ciphertext) - вектор инициализации и зашифрованные данные
+            tuple: (iv, ciphertext)
         """
-        try:
-            if iv is None:
-                iv = os.urandom(self.block_size)
-            
-            cipher = Cipher(algorithms.Camellia(self.key), modes.CBC(iv))
-            encryptor = cipher.encryptor()
-            
-            padder = padding.ANSIX923(self.block_size_bits).padder()
-            padded_data = padder.update(plaintext) + padder.finalize()
-            
-            ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-            
-            return iv, ciphertext
-        except Exception as e:
-            print(f"Ошибка при шифровании Camellia: {e}")
-            raise
+        if iv is None:
+            iv = os.urandom(self.block_size)
+        
+        cipher = Cipher(algorithms.Camellia(self.key), modes.CBC(iv))
+        encryptor = cipher.encryptor()
+        
+        padder = padding.ANSIX923(self.block_size_bits).padder()
+        padded_data = padder.update(plaintext) + padder.finalize()
+        
+        ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+        
+        return iv, ciphertext
     
     def decrypt(self, ciphertext, iv):
         """Расшифровать данные в режиме CBC.
@@ -80,19 +64,15 @@ class CamelliaCipher:
         Возвращает:
             bytes: расшифрованные данные
         """
-        try:
-            cipher = Cipher(algorithms.Camellia(self.key), modes.CBC(iv))
-            decryptor = cipher.decryptor()
-            
-            decrypted_padded = decryptor.update(ciphertext) + decryptor.finalize()
-            
-            unpadder = padding.ANSIX923(self.block_size_bits).unpadder()
-            plaintext = unpadder.update(decrypted_padded) + unpadder.finalize()
-            
-            return plaintext
-        except Exception as e:
-            print(f"Ошибка при дешифровании Camellia: {e}")
-            raise
+        cipher = Cipher(algorithms.Camellia(self.key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        
+        decrypted_padded = decryptor.update(ciphertext) + decryptor.finalize()
+        
+        unpadder = padding.ANSIX923(self.block_size_bits).unpadder()
+        plaintext = unpadder.update(decrypted_padded) + unpadder.finalize()
+        
+        return plaintext
     
     @staticmethod
     def generate_key(key_size_bits=256, config_path='config.json'):
@@ -105,15 +85,7 @@ class CamelliaCipher:
         Возвращает:
             bytes: сгенерированный ключ
         """
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        except FileNotFoundError:
-            print(f"Ошибка: файл конфигурации {config_path} не найден")
-            raise
-        except json.JSONDecodeError:
-            print(f"Ошибка: файл {config_path} содержит некорректный JSON")
-            raise
+        config = load_json(config_path)
         
         key_sizes = config['camellia_key_sizes']
         

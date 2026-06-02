@@ -1,18 +1,12 @@
 import argparse
-import json
 import os
 
 from hybrid import HybridCrypto
+from load_and_save_data import load_json, save_json, file_exists
 
 
 class Settings:
-    """Класс для работы с настройками приложения.
-    
-    Отвечает за:
-    - Загрузку и сохранение настроек в JSON файл
-    - Валидацию и обработку ошибок
-    - Интерактивное редактирование настроек
-    """
+    """Класс для работы с настройками приложения."""
     
     SETTINGS_FILE = 'settings.json'
     
@@ -27,12 +21,8 @@ class Settings:
             dict: словарь с настройками или пустой словарь при ошибке
         """
         try:
-            if os.path.exists(self.SETTINGS_FILE):
-                with open(self.SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            return {}
-        except json.JSONDecodeError:
-            print(f"Ошибка: неверный формат JSON в файле {self.SETTINGS_FILE}")
+            if file_exists(self.SETTINGS_FILE):
+                return load_json(self.SETTINGS_FILE)
             return {}
         except Exception as e:
             print(f"Ошибка при загрузке настроек: {e}")
@@ -40,12 +30,7 @@ class Settings:
     
     def save(self):
         """Сохранить настройки в файл."""
-        try:
-            with open(self.SETTINGS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self.settings, f, indent=4, ensure_ascii=False)
-            print(f"Настройки сохранены в {self.SETTINGS_FILE}")
-        except Exception as e:
-            print(f"Ошибка при сохранении настроек: {e}")
+        save_json(self.settings, self.SETTINGS_FILE, indent=4)
     
     def get(self, key, default=None):
         """Получить значение настройки.
@@ -105,15 +90,7 @@ class Settings:
 
 
 def interactive_mode():
-    """Интерактивный режим работы с меню.
-    
-    Позволяет пользователю последовательно:
-    1. Сгенерировать ключи
-    2. Зашифровать файл
-    3. Расшифровать файл
-    4. Изменить настройки
-    5. Выйти из программы
-    """
+    """Интерактивный режим работы с меню."""
     print("\n" + "="*60)
     print("ГИБРИДНАЯ КРИПТОСИСТЕМА (Camellia + RSA)")
     print("="*60)
@@ -210,54 +187,35 @@ def main():
     
     crypto = HybridCrypto()
     
-    # Определяем режим работы
-    if args.interactive:
-        mode = 'interactive'
-    elif args.generation:
-        mode = 'generation'
-    elif args.encryption:
-        mode = 'encryption'
-    elif args.decryption:
-        mode = 'decryption'
-    else:
-        mode = 'interactive'
-    
-    # Чистый match-case без if
-    match mode:
-        case 'interactive':
-            interactive_mode()
-        
-        case 'generation':
+    # match-case с проверкой флагов
+    match args:
+        case _ if args.generation:
             if not all([args.public_key, args.private_key, args.enc_sym_key]):
                 print("Ошибка: для генерации укажите --public-key, --private-key и --enc-sym-key")
                 return
-            
             crypto.generate_keys(args.public_key, args.private_key, args.enc_sym_key, args.key_size)
         
-        case 'encryption':
+        case _ if args.encryption:
             if not all([args.input, args.output, args.enc_sym_key, args.private_key]):
                 print("Ошибка: для шифрования укажите --input, --output, --enc-sym-key и --private-key")
                 return
-            
             if not os.path.exists(args.input):
                 print(f"Ошибка: входной файл не найден: {args.input}")
                 return
-            
             crypto.encrypt_file(args.input, args.output, args.enc_sym_key, args.private_key)
         
-        case 'decryption':
+        case _ if args.decryption:
             if not all([args.input, args.output, args.enc_sym_key, args.private_key]):
                 print("Ошибка: для дешифрования укажите --input, --output, --enc-sym-key и --private-key")
                 return
-            
             if not os.path.exists(args.input):
                 print(f"Ошибка: входной файл не найден: {args.input}")
                 return
-            
             crypto.decrypt_file(args.input, args.output, args.enc_sym_key, args.private_key)
         
         case _:
-            print("Неизвестный режим работы")
+            # Если ни один флаг не установлен или указан -i
+            interactive_mode()
 
 
 if __name__ == "__main__":
