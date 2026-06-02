@@ -1,6 +1,34 @@
 {
     "camellia_block_size": 16,
-    "camellia_key_sizes": [128, 192, 256],
+    "camellia_block_size_bits": 128,
+    "camellia_key_sizes": {
+        "128": 16,
+        "192": 24,
+        "256": 32
+    },
+    "aes_block_size": 16,
+    "aes_block_size_bits": 128,
+    "aes_key_sizes": {
+        "128": 16,
+        "192": 24,
+        "256": 32
+    },
+    "rsa_public_exponent": 65537,
     "rsa_key_size": 2048,
-    "rsa_public_exponent": 65537
+    "encoding": {
+        "json_indent": 4,
+        "pem_encoding": "PEM",
+        "private_format": "TraditionalOpenSSL"
+    },
+    "available_symmetric_algorithms": ["camellia", "aes"],
+    "default_symmetric_algorithm": "camellia",
+    "settings_file": "settings.json",
+    "default_paths": {
+        "public_key": "public.pem",
+        "private_key": "private.pem",
+        "encrypted_sym_key": "sym_key.enc",
+        "input_file": "input.txt",
+        "encrypted_file": "encrypted.bin",
+        "decrypted_file": "decrypted.txt"
+    }
 }

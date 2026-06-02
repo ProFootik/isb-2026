@@ -8,10 +8,15 @@ from load_and_save_data import load_json, save_json, file_exists
 class Settings:
     """Класс для работы с настройками приложения."""
     
-    SETTINGS_FILE = 'settings.json'
-    
-    def __init__(self):
-        """Инициализация и загрузка настроек."""
+    def __init__(self, config_path='config.json'):
+        """Инициализация и загрузка настроек.
+        
+        Аргументы:
+            config_path: путь к файлу конфигурации
+        """
+        self.config = load_json(config_path)
+        self.SETTINGS_FILE = self.config['settings_file']
+        self.default_paths = self.config['default_paths']
         self.settings = self._load()
     
     def _load(self):
@@ -30,7 +35,7 @@ class Settings:
     
     def save(self):
         """Сохранить настройки в файл."""
-        save_json(self.settings, self.SETTINGS_FILE, indent=4)
+        save_json(self.settings, self.SETTINGS_FILE, indent=self.config['encoding']['json_indent'])
     
     def get(self, key, default=None):
         """Получить значение настройки.
@@ -57,16 +62,7 @@ class Settings:
         """Обновить настройки из пользовательского ввода."""
         print("\nВведите пути к файлам (можно оставить пустым для значения по умолчанию):")
         
-        defaults = {
-            'public_key': 'public.pem',
-            'private_key': 'private.pem',
-            'encrypted_sym_key': 'sym_key.enc',
-            'input_file': 'input.txt',
-            'encrypted_file': 'encrypted.bin',
-            'decrypted_file': 'decrypted.txt'
-        }
-        
-        for key, default in defaults.items():
+        for key, default in self.default_paths.items():
             value = input(f"{key} [{default}]: ").strip()
             self.settings[key] = value if value else default
         
@@ -91,8 +87,10 @@ class Settings:
 
 def interactive_mode():
     """Интерактивный режим работы с меню."""
+    config = load_json('config.json')
+    
     print("\n" + "="*60)
-    print("ГИБРИДНАЯ КРИПТОСИСТЕМА (Camellia + RSA)")
+    print("ГИБРИДНАЯ КРИПТОСИСТЕМА (Camellia / AES + RSA)")
     print("="*60)
     
     settings = Settings()
@@ -120,7 +118,20 @@ def interactive_mode():
         
         match choice:
             case '1':
-                print("\nДоступные длины ключа Camellia: 128, 192, 256 бит")
+                print("\nДоступные симметричные алгоритмы:")
+                print("  1. Camellia (по умолчанию)")
+                print("  2. AES")
+                
+                algo_choice = input("Выберите алгоритм (1-2) [1]: ").strip()
+                match algo_choice:
+                    case '2':
+                        algorithm = 'aes'
+                        print("Выбран алгоритм: AES")
+                    case _:
+                        algorithm = config['default_symmetric_algorithm']
+                        print(f"Выбран алгоритм: {algorithm.upper()}")
+                
+                print("\nДоступные длины ключа: 128, 192, 256 бит")
                 while True:
                     try:
                         key_size = int(input("Введите длину ключа [256]: ") or "256")
@@ -134,7 +145,8 @@ def interactive_mode():
                     settings.get('public_key'),
                     settings.get('private_key'),
                     settings.get('encrypted_sym_key'),
-                    key_size
+                    key_size,
+                    algorithm
                 )
                 
             case '2':
@@ -166,9 +178,11 @@ def interactive_mode():
 
 def main():
     """Главная функция с аргументами командной строки."""
+    config = load_json('config.json')
+    
     parser = argparse.ArgumentParser(
-        description="Гибридная криптосистема (Camellia + RSA)",
-        epilog="Примеры:\n  python main.py -i\n  python main.py -gen --public-key pub.pem --private-key priv.pem --enc-sym-key key.enc"
+        description="Гибридная криптосистема (Camellia/AES + RSA)",
+        epilog="Примеры:\n  python main.py -i\n  python main.py -gen --public-key pub.pem --private-key priv.pem --enc-sym-key key.enc --algorithm aes --key-size 256"
     )
     
     parser.add_argument('-gen', '--generation', action='store_true', help='Режим генерации ключей')
@@ -179,7 +193,8 @@ def main():
     parser.add_argument('--public-key', type=str, help='Путь для сохранения открытого ключа RSA')
     parser.add_argument('--private-key', type=str, help='Путь для сохранения закрытого ключа RSA')
     parser.add_argument('--enc-sym-key', type=str, help='Путь для сохранения зашифрованного ключа')
-    parser.add_argument('--key-size', type=int, choices=[128, 192, 256], default=256, help='Длина ключа Camellia')
+    parser.add_argument('--key-size', type=int, choices=[128, 192, 256], default=256, help='Длина ключа (128, 192, 256)')
+    parser.add_argument('--algorithm', type=str, choices=['camellia', 'aes'], default=config['default_symmetric_algorithm'], help='Симметричный алгоритм')
     parser.add_argument('--input', type=str, help='Путь к входному файлу')
     parser.add_argument('--output', type=str, help='Путь к выходному файлу')
     
@@ -187,34 +202,40 @@ def main():
     
     crypto = HybridCrypto()
     
-    # match-case с проверкой флагов
     match args:
         case _ if args.generation:
             if not all([args.public_key, args.private_key, args.enc_sym_key]):
                 print("Ошибка: для генерации укажите --public-key, --private-key и --enc-sym-key")
                 return
-            crypto.generate_keys(args.public_key, args.private_key, args.enc_sym_key, args.key_size)
+            
+            crypto.generate_keys(
+                args.public_key, args.private_key, args.enc_sym_key,
+                args.key_size, args.algorithm
+            )
         
         case _ if args.encryption:
             if not all([args.input, args.output, args.enc_sym_key, args.private_key]):
                 print("Ошибка: для шифрования укажите --input, --output, --enc-sym-key и --private-key")
                 return
+            
             if not os.path.exists(args.input):
                 print(f"Ошибка: входной файл не найден: {args.input}")
                 return
+            
             crypto.encrypt_file(args.input, args.output, args.enc_sym_key, args.private_key)
         
         case _ if args.decryption:
             if not all([args.input, args.output, args.enc_sym_key, args.private_key]):
                 print("Ошибка: для дешифрования укажите --input, --output, --enc-sym-key и --private-key")
                 return
+            
             if not os.path.exists(args.input):
                 print(f"Ошибка: входной файл не найден: {args.input}")
                 return
+            
             crypto.decrypt_file(args.input, args.output, args.enc_sym_key, args.private_key)
         
         case _:
-            # Если ни один флаг не установлен или указан -i
             interactive_mode()
 
 
