@@ -1,7 +1,8 @@
 from load_and_save_data import load_json, save_json, file_exists
 from load_and_save_data import save_pem_public_key, save_pem_private_key
 from load_and_save_data import load_pem_private_key
-
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
 
 class HybridCrypto:
     """Гибридная криптосистема с поддержкой Camellia и AES."""
@@ -125,8 +126,6 @@ class HybridCrypto:
         
         private_key = load_pem_private_key(private_key_path)
         
-        from cryptography.hazmat.primitives.asymmetric import padding
-        from cryptography.hazmat.primitives import hashes
         symmetric_key = private_key.decrypt(
             encrypted_key,
             padding.OAEP(
